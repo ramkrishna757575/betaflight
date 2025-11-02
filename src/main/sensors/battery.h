@@ -52,6 +52,8 @@ typedef struct batteryProfile_s {
 
 PG_DECLARE_ARRAY(batteryProfile_t, BATTERY_PROFILE_COUNT, batteryProfiles);
 
+extern batteryProfile_t *currentBatteryProfile;
+
 typedef struct batteryConfig_s {
     // voltage
     uint16_t vbatnotpresentcellvoltage;     // Between vbatmaxcellvoltage and 2*this is considered to be USB powered. Below this it is notpresent

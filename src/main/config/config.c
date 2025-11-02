@@ -519,9 +519,11 @@ static void validateAndFixConfig(void)
 
     // validate that the minimum battery cell voltage is less than the maximum cell voltage
     // reset to defaults if not
-    if (batteryConfig()->vbatmincellvoltage >=  batteryConfig()->vbatmaxcellvoltage) {
-        batteryConfigMutable()->vbatmincellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MIN;
-        batteryConfigMutable()->vbatmaxcellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MAX;
+    for (unsigned profileIndex = 0; profileIndex < BATTERY_PROFILE_COUNT; profileIndex++) {
+        if (batteryProfilesMutable(profileIndex)->vbatmincellvoltage >= batteryProfilesMutable(profileIndex)->vbatmaxcellvoltage) {
+            batteryProfilesMutable(profileIndex)->vbatmincellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MIN;
+            batteryProfilesMutable(profileIndex)->vbatmaxcellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MAX;
+        }
     }
 
 #ifdef USE_MSP_DISPLAYPORT

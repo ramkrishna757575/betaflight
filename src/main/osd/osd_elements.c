@@ -569,7 +569,7 @@ static char osdGetBatterySymbol(int cellVoltage)
         return SYM_MAIN_BATT; // FIXME: currently the BAT- symbol, ideally replace with a battery with exclamation mark
     } else {
         // Calculate a symbol offset using cell voltage over full cell voltage range
-        const int symOffset = scaleRange(cellVoltage, batteryConfig()->vbatmincellvoltage, batteryConfig()->vbatmaxcellvoltage, 0, 8);
+        const int symOffset = scaleRange(cellVoltage, currentBatteryProfile->vbatmincellvoltage, currentBatteryProfile->vbatmaxcellvoltage, 0, 8);
         return SYM_BATT_EMPTY - constrain(symOffset, 0, 6);
     }
 }

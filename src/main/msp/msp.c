@@ -902,15 +902,15 @@ static bool mspCommonProcessOutCommand(int16_t cmdMSP, sbuf_t *dst, mspPostProce
     }
 
     case MSP_BATTERY_CONFIG:
-        sbufWriteU8(dst, (batteryConfig()->vbatmincellvoltage + 5) / 10);
-        sbufWriteU8(dst, (batteryConfig()->vbatmaxcellvoltage + 5) / 10);
-        sbufWriteU8(dst, (batteryConfig()->vbatwarningcellvoltage + 5) / 10);
+        sbufWriteU8(dst, (currentBatteryProfile->vbatmincellvoltage + 5) / 10);
+        sbufWriteU8(dst, (currentBatteryProfile->vbatmaxcellvoltage + 5) / 10);
+        sbufWriteU8(dst, (currentBatteryProfile->vbatwarningcellvoltage + 5) / 10);
         sbufWriteU16(dst, batteryConfig()->batteryCapacity);
         sbufWriteU8(dst, batteryConfig()->voltageMeterSource);
         sbufWriteU8(dst, batteryConfig()->currentMeterSource);
-        sbufWriteU16(dst, batteryConfig()->vbatmincellvoltage);
-        sbufWriteU16(dst, batteryConfig()->vbatmaxcellvoltage);
-        sbufWriteU16(dst, batteryConfig()->vbatwarningcellvoltage);
+        sbufWriteU16(dst, currentBatteryProfile->vbatmincellvoltage);
+        sbufWriteU16(dst, currentBatteryProfile->vbatmaxcellvoltage);
+        sbufWriteU16(dst, currentBatteryProfile->vbatwarningcellvoltage);
         break;
 
     case MSP_TRANSPONDER_CONFIG: {
