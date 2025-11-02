@@ -111,25 +111,28 @@ PG_REGISTER_ARRAY_WITH_RESET_FN(batteryProfile_t, BATTERY_PROFILE_COUNT, battery
 
 void pgResetFn_batteryProfiles(batteryProfile_t *instance)
 {
-    // Profile 0: LiPo (4.2V max, 3.5V warning, 3.3V min)
+    // Profile 0: LiPo (4.2V max, 3.5V warning, 3.3V min, 50% hover)
     RESET_CONFIG(batteryProfile_t, &instance[0],
         .vbatmaxcellvoltage = 420,  // 4.20V
         .vbatmincellvoltage = 330,  // 3.30V
         .vbatwarningcellvoltage = 350,  // 3.50V
+        .thrHover8 = 50,  // 50% hover throttle (typical for LiPo)
     );
     
-    // Profile 1: LiHV (4.35V max, 3.5V warning, 3.3V min)
+    // Profile 1: LiHV (4.35V max, 3.5V warning, 3.3V min, 48% hover)
     RESET_CONFIG(batteryProfile_t, &instance[1],
         .vbatmaxcellvoltage = 435,  // 4.35V
         .vbatmincellvoltage = 330,  // 3.30V
         .vbatwarningcellvoltage = 350,  // 3.50V
+        .thrHover8 = 48,  // 48% hover throttle (slightly lighter than LiPo)
     );
     
-    // Profile 2: LiIon (4.1V max, 3.4V warning, 3.0V min)
+    // Profile 2: LiIon (4.1V max, 3.4V warning, 3.0V min, 55% hover)
     RESET_CONFIG(batteryProfile_t, &instance[2],
         .vbatmaxcellvoltage = 410,  // 4.10V
         .vbatmincellvoltage = 300,  // 3.00V
         .vbatwarningcellvoltage = 340,  // 3.40V
+        .thrHover8 = 55,  // 55% hover throttle (heavier than LiPo)
     );
 }
 

@@ -48,6 +48,7 @@ typedef struct batteryProfile_s {
     uint16_t vbatmaxcellvoltage;            // maximum voltage per cell, used for auto-detecting battery voltage in 0.01V units, default is 430 (4.30V)
     uint16_t vbatmincellvoltage;            // minimum voltage per cell, this triggers battery critical alarm, in 0.01V units, default is 330 (3.30V)
     uint16_t vbatwarningcellvoltage;        // warning voltage per cell, this triggers battery warning alarm, in 0.01V units, default is 350 (3.50V)
+    uint8_t thrHover8;                      // throttle hover point (0-100), varies by battery type/weight
 } batteryProfile_t;
 
 PG_DECLARE_ARRAY(batteryProfile_t, BATTERY_PROFILE_COUNT, batteryProfiles);

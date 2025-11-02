@@ -1383,8 +1383,8 @@ case MSP_NAME:
         // added in 1.43
         sbufWriteU8(dst, currentControlRateProfile->rates_type);
 
-        // added in 1.47
-        sbufWriteU8(dst, currentControlRateProfile->thrHover8);
+        // added in 1.47 (now from battery profile)
+        sbufWriteU8(dst, currentBatteryProfile->thrHover8);
 
         break;
 
@@ -2833,9 +2833,9 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
                 currentControlRateProfile->rates_type = sbufReadU8(src);
             }
 
-            // version 1.47
+            // version 1.47 (now writes to battery profile)
             if (sbufBytesRemaining(src) >= 1) {
-                currentControlRateProfile->thrHover8 = sbufReadU8(src);
+                currentBatteryProfile->thrHover8 = sbufReadU8(src);
             }
 
             initRcProcessing();
