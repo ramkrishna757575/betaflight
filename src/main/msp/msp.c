@@ -4215,16 +4215,16 @@ static mspResult_e mspCommonProcessInCommand(mspDescriptor_t srcDesc, int16_t cm
     }
 
     case MSP_SET_BATTERY_CONFIG:
-        batteryConfigMutable()->vbatmincellvoltage = sbufReadU8(src) * 10;      // vbatlevel_warn1 in MWC2.3 GUI
-        batteryConfigMutable()->vbatmaxcellvoltage = sbufReadU8(src) * 10;      // vbatlevel_warn2 in MWC2.3 GUI
-        batteryConfigMutable()->vbatwarningcellvoltage = sbufReadU8(src) * 10;  // vbatlevel when buzzer starts to alert
+        batteryProfilesMutable(getCurrentBatteryProfileIndex())->vbatmincellvoltage = sbufReadU8(src) * 10;      // vbatlevel_warn1 in MWC2.3 GUI
+        batteryProfilesMutable(getCurrentBatteryProfileIndex())->vbatmaxcellvoltage = sbufReadU8(src) * 10;      // vbatlevel_warn2 in MWC2.3 GUI
+        batteryProfilesMutable(getCurrentBatteryProfileIndex())->vbatwarningcellvoltage = sbufReadU8(src) * 10;  // vbatlevel when buzzer starts to alert
         batteryConfigMutable()->batteryCapacity = sbufReadU16(src);
         batteryConfigMutable()->voltageMeterSource = sbufReadU8(src);
         batteryConfigMutable()->currentMeterSource = sbufReadU8(src);
         if (sbufBytesRemaining(src) >= 6) {
-            batteryConfigMutable()->vbatmincellvoltage = sbufReadU16(src);
-            batteryConfigMutable()->vbatmaxcellvoltage = sbufReadU16(src);
-            batteryConfigMutable()->vbatwarningcellvoltage = sbufReadU16(src);
+            batteryProfilesMutable(getCurrentBatteryProfileIndex())->vbatmincellvoltage = sbufReadU16(src);
+            batteryProfilesMutable(getCurrentBatteryProfileIndex())->vbatmaxcellvoltage = sbufReadU16(src);
+            batteryProfilesMutable(getCurrentBatteryProfileIndex())->vbatwarningcellvoltage = sbufReadU16(src);
         }
         break;
 
