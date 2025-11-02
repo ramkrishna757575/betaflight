@@ -162,7 +162,7 @@ typedef struct lookupTableEntry_s {
 
 #define VALUE_TYPE_OFFSET 0
 #define VALUE_SECTION_OFFSET 3
-#define VALUE_MODE_OFFSET 5
+#define VALUE_MODE_OFFSET 6
 
 typedef enum {
     // value type, bits 0-2
@@ -173,13 +173,14 @@ typedef enum {
     VAR_UINT32 = (4 << VALUE_TYPE_OFFSET),
     VAR_INT32 = (5 << VALUE_TYPE_OFFSET),
 
-    // value section, bits 3-4
+    // value section, bits 3-5
     MASTER_VALUE = (0 << VALUE_SECTION_OFFSET),
     PROFILE_VALUE = (1 << VALUE_SECTION_OFFSET),
     PROFILE_RATE_VALUE = (2 << VALUE_SECTION_OFFSET),
     HARDWARE_VALUE = (3 << VALUE_SECTION_OFFSET), // Part of the master section, but used for the hardware definition
+    PROFILE_BATTERY_VALUE = (4 << VALUE_SECTION_OFFSET),
 
-    // value mode, bits 5-7
+    // value mode, bits 6-8
     MODE_DIRECT = (0 << VALUE_MODE_OFFSET),
     MODE_LOOKUP = (1 << VALUE_MODE_OFFSET),
     MODE_ARRAY = (2 << VALUE_MODE_OFFSET),
@@ -188,8 +189,8 @@ typedef enum {
 } cliValueFlag_e;
 
 #define VALUE_TYPE_MASK (0x07)
-#define VALUE_SECTION_MASK (0x18)
-#define VALUE_MODE_MASK (0xE0)
+#define VALUE_SECTION_MASK (0x38)
+#define VALUE_MODE_MASK (0xC0)
 
 typedef struct cliMinMaxConfig_s {
     const int16_t min;
