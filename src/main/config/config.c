@@ -518,11 +518,18 @@ static void validateAndFixConfig(void)
     validateAndfixMotorOutputReordering(motorConfigMutable()->dev.motorOutputReordering, MAX_SUPPORTED_MOTORS);
 
     // validate that the minimum battery cell voltage is less than the maximum cell voltage
+    // and warning voltage is between min and max
     // reset to defaults if not
     for (unsigned profileIndex = 0; profileIndex < BATTERY_PROFILE_COUNT; profileIndex++) {
-        if (batteryProfilesMutable(profileIndex)->vbatmincellvoltage >= batteryProfilesMutable(profileIndex)->vbatmaxcellvoltage) {
-            batteryProfilesMutable(profileIndex)->vbatmincellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MIN;
-            batteryProfilesMutable(profileIndex)->vbatmaxcellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MAX;
+        batteryProfile_t *profile = batteryProfilesMutable(profileIndex);
+        if (profile->vbatmincellvoltage >= profile->vbatmaxcellvoltage) {
+            profile->vbatmincellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MIN;
+            profile->vbatmaxcellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MAX;
+        }
+        // Ensure warning voltage is between min and max
+        if (profile->vbatwarningcellvoltage <= profile->vbatmincellvoltage || 
+            profile->vbatwarningcellvoltage >= profile->vbatmaxcellvoltage) {
+            profile->vbatwarningcellvoltage = (profile->vbatmincellvoltage + profile->vbatmaxcellvoltage) / 2;
         }
     }
 

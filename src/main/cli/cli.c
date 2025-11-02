@@ -6504,7 +6504,7 @@ static void printConfig(const char *cmdName, char *cmdline, bool doDiff)
                     cliBatteryProfile(cmdName, "");
 
                     cliPrintHashLine("save configuration");
-                    cliPrint("save");
+                    cliPrintLine("save");
 #ifdef USE_CLI_BATCH
                     batchModeEnabled = false;
 #endif
