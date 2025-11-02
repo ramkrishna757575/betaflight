@@ -823,7 +823,7 @@ void initRcProcessing(void)
 
     float thrMid   = currentControlRateProfile->thrMid8   / 100.0f;  // normalized x coordinate for hover point
     float expo     = currentControlRateProfile->thrExpo8   / 100.0f;  // normalized expo (0.0 .. 1.0)
-    float thrHover = currentControlRateProfile->thrHover8 / 100.0f;  // normalized y coordinate for hover point
+    float thrHover = currentBatteryProfile->thrHover8 / 100.0f;  // normalized y coordinate for hover point (from battery profile)
 
     /*
     Algorithm Overview:

@@ -63,9 +63,9 @@ static const void *cmsx_Power_onEnter(displayPort_t *pDisp)
     batteryConfig_voltageMeterSource = batteryConfig()->voltageMeterSource;
     batteryConfig_currentMeterSource = batteryConfig()->currentMeterSource;
 
-    batteryConfig_vbatmincellvoltage = batteryConfig()->vbatmincellvoltage;
-    batteryConfig_vbatmaxcellvoltage = batteryConfig()->vbatmaxcellvoltage;
-    batteryConfig_vbatwarningcellvoltage = batteryConfig()->vbatwarningcellvoltage;
+    batteryConfig_vbatmincellvoltage = currentBatteryProfile->vbatmincellvoltage;
+    batteryConfig_vbatmaxcellvoltage = currentBatteryProfile->vbatmaxcellvoltage;
+    batteryConfig_vbatwarningcellvoltage = currentBatteryProfile->vbatwarningcellvoltage;
 
     voltageSensorADCConfig_vbatscale = voltageSensorADCConfig(0)->vbatscale;
 
@@ -88,9 +88,9 @@ static const void *cmsx_Power_onExit(displayPort_t *pDisp, const OSD_Entry *self
     batteryConfigMutable()->voltageMeterSource = batteryConfig_voltageMeterSource;
     batteryConfigMutable()->currentMeterSource = batteryConfig_currentMeterSource;
 
-    batteryConfigMutable()->vbatmincellvoltage = batteryConfig_vbatmincellvoltage;
-    batteryConfigMutable()->vbatmaxcellvoltage = batteryConfig_vbatmaxcellvoltage;
-    batteryConfigMutable()->vbatwarningcellvoltage = batteryConfig_vbatwarningcellvoltage;
+    batteryProfilesMutable(getCurrentBatteryProfileIndex())->vbatmincellvoltage = batteryConfig_vbatmincellvoltage;
+    batteryProfilesMutable(getCurrentBatteryProfileIndex())->vbatmaxcellvoltage = batteryConfig_vbatmaxcellvoltage;
+    batteryProfilesMutable(getCurrentBatteryProfileIndex())->vbatwarningcellvoltage = batteryConfig_vbatwarningcellvoltage;
 
     voltageSensorADCConfigMutable(0)->vbatscale = voltageSensorADCConfig_vbatscale;
 

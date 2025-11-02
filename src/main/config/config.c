@@ -110,6 +110,7 @@ PG_REGISTER_WITH_RESET_TEMPLATE(systemConfig_t, systemConfig, PG_SYSTEM_CONFIG, 
 PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
     .pidProfileIndex = 0,
     .activeRateProfile = 0,
+    .batteryProfileIndex = 0,
     .debug_mode = DEBUG_MODE,
     .task_statistics = true,
     .rateProfile6PosSwitch = false,
@@ -517,10 +518,19 @@ static void validateAndFixConfig(void)
     validateAndfixMotorOutputReordering(motorConfigMutable()->dev.motorOutputReordering, MAX_SUPPORTED_MOTORS);
 
     // validate that the minimum battery cell voltage is less than the maximum cell voltage
+    // and warning voltage is between min and max
     // reset to defaults if not
-    if (batteryConfig()->vbatmincellvoltage >=  batteryConfig()->vbatmaxcellvoltage) {
-        batteryConfigMutable()->vbatmincellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MIN;
-        batteryConfigMutable()->vbatmaxcellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MAX;
+    for (unsigned profileIndex = 0; profileIndex < BATTERY_PROFILE_COUNT; profileIndex++) {
+        batteryProfile_t *profile = batteryProfilesMutable(profileIndex);
+        if (profile->vbatmincellvoltage >= profile->vbatmaxcellvoltage) {
+            profile->vbatmincellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MIN;
+            profile->vbatmaxcellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MAX;
+        }
+        // Ensure warning voltage is between min and max
+        if (profile->vbatwarningcellvoltage <= profile->vbatmincellvoltage || 
+            profile->vbatwarningcellvoltage >= profile->vbatmaxcellvoltage) {
+            profile->vbatwarningcellvoltage = (profile->vbatmincellvoltage + profile->vbatmaxcellvoltage) / 2;
+        }
     }
 
 #ifdef USE_MSP_DISPLAYPORT

@@ -194,6 +194,7 @@ static bool configIsInCopy = false;
 #define CURRENT_PROFILE_INDEX -1
 static int8_t pidProfileIndexToUse = CURRENT_PROFILE_INDEX;
 static int8_t rateProfileIndexToUse = CURRENT_PROFILE_INDEX;
+static int8_t batteryProfileIndexToUse = CURRENT_PROFILE_INDEX;
 
 #ifdef USE_CLI_BATCH
 static bool commandBatchActive = false;
@@ -744,6 +745,11 @@ static uint8_t getRateProfileIndexToUse(void)
     return rateProfileIndexToUse == CURRENT_PROFILE_INDEX ? getCurrentControlRateProfileIndex() : rateProfileIndexToUse;
 }
 
+static uint8_t getBatteryProfileIndexToUse(void)
+{
+    return batteryProfileIndexToUse == CURRENT_PROFILE_INDEX ? getCurrentBatteryProfileIndex() : batteryProfileIndexToUse;
+}
+
 static uint16_t getValueOffset(const clivalue_t *value)
 {
     switch (value->type & VALUE_SECTION_MASK) {
@@ -754,6 +760,8 @@ static uint16_t getValueOffset(const clivalue_t *value)
         return value->offset + sizeof(pidProfile_t) * getPidProfileIndexToUse();
     case PROFILE_RATE_VALUE:
         return value->offset + sizeof(controlRateConfig_t) * getRateProfileIndexToUse();
+    case PROFILE_BATTERY_VALUE:
+        return value->offset + sizeof(batteryProfile_t) * getBatteryProfileIndexToUse();
     }
     return 0;
 }
@@ -4173,6 +4181,23 @@ static void cliRateProfile(const char *cmdName, char *cmdline)
     }
 }
 
+static void cliBatteryProfile(const char *cmdName, char *cmdline)
+{
+    if (isEmpty(cmdline)) {
+        cliPrintLinef("battery_profile %d", getCurrentBatteryProfileIndex());
+        return;
+    } else {
+        const int i = atoi(cmdline);
+        if (i >= 0 && i < BATTERY_PROFILE_COUNT) {
+            changeBatteryProfile(i);
+            cliBatteryProfile(cmdName, "");
+        } else {
+            cliPrintErrorLinef(cmdName, "BATTERY PROFILE OUTSIDE OF [0..%d]", BATTERY_PROFILE_COUNT - 1);
+        }
+    }
+}
+
+
 static void cliDumpPidProfile(const char *cmdName, uint8_t pidProfileIndex, dumpFlags_t dumpMask)
 {
     if (pidProfileIndex >= PID_PROFILE_COUNT) {
@@ -4209,6 +4234,25 @@ static void cliDumpRateProfile(const char *cmdName, uint8_t rateProfileIndex, du
     dumpAllValues(cmdName, PROFILE_RATE_VALUE, dumpMask, rateProfileStr);
 
     rateProfileIndexToUse = CURRENT_PROFILE_INDEX;
+}
+
+static void cliDumpBatteryProfile(const char *cmdName, uint8_t batteryProfileIndex, dumpFlags_t dumpMask)
+{
+    if (batteryProfileIndex >= BATTERY_PROFILE_COUNT) {
+        // Faulty values
+        return;
+    }
+
+    batteryProfileIndexToUse = batteryProfileIndex;
+
+    cliPrintLinefeed();
+    cliBatteryProfile(cmdName, "");
+
+    char batteryProfileStr[20];
+    tfp_sprintf(batteryProfileStr, "battery_profile %d", batteryProfileIndex);
+    dumpAllValues(cmdName, PROFILE_BATTERY_VALUE, dumpMask, batteryProfileStr);
+
+    batteryProfileIndexToUse = CURRENT_PROFILE_INDEX;
 }
 
 #ifdef USE_CLI_BATCH
@@ -4414,6 +4458,10 @@ STATIC_UNIT_TESTED void cliGet(const char *cmdName, char *cmdline)
                 cliRateProfile(cmdName, "");
 
                 break;
+            case PROFILE_BATTERY_VALUE:
+                cliBatteryProfile(cmdName, "");
+
+                break;
             default:
 
                 break;
@@ -4429,6 +4477,7 @@ STATIC_UNIT_TESTED void cliGet(const char *cmdName, char *cmdline)
 
     pidProfileIndexToUse = CURRENT_PROFILE_INDEX;
     rateProfileIndexToUse = CURRENT_PROFILE_INDEX;
+    batteryProfileIndexToUse = CURRENT_PROFILE_INDEX;
 
     if (!matchedCommands) {
         cliPrintErrorLinef(cmdName, ERROR_INVALID_NAME, cmdline);
@@ -6439,19 +6488,35 @@ static void printConfig(const char *cmdName, char *cmdline, bool doDiff)
                     cliPrintHashLine("restore original rateprofile selection");
 
                     cliRateProfile(cmdName, "");
+                }
+
+                rateProfileIndexToUse = CURRENT_PROFILE_INDEX;
+                
+                for (uint32_t batteryIndex = 0; batteryIndex < BATTERY_PROFILE_COUNT; batteryIndex++) {
+                    cliDumpBatteryProfile(cmdName, batteryIndex, dumpMask);
+                }
+
+                batteryProfileIndexToUse = systemConfig_Copy.batteryProfileIndex;
+
+                if (!(dumpMask & BARE)) {
+                    cliPrintHashLine("restore original battery_profile selection");
+
+                    cliBatteryProfile(cmdName, "");
 
                     cliPrintHashLine("save configuration");
-                    cliPrint("save");
+                    cliPrintLine("save");
 #ifdef USE_CLI_BATCH
                     batchModeEnabled = false;
 #endif
                 }
 
-                rateProfileIndexToUse = CURRENT_PROFILE_INDEX;
+                batteryProfileIndexToUse = CURRENT_PROFILE_INDEX;
             } else {
                 cliDumpPidProfile(cmdName, systemConfig_Copy.pidProfileIndex, dumpMask);
 
                 cliDumpRateProfile(cmdName, systemConfig_Copy.activeRateProfile, dumpMask);
+                
+                cliDumpBatteryProfile(cmdName, systemConfig_Copy.batteryProfileIndex, dumpMask);
             }
         }
     } else if (dumpMask & DUMP_PROFILE) {
@@ -6644,6 +6709,7 @@ const clicmd_t cmdTable[] = {
 #endif
     CLI_COMMAND_DEF("profile", "change profile", "[<index>]", cliProfile),
     CLI_COMMAND_DEF("rateprofile", "change rate profile", "[<index>]", cliRateProfile),
+    CLI_COMMAND_DEF("battery_profile", "change battery profile", "[<index>]", cliBatteryProfile),
 #ifdef USE_RC_SMOOTHING_FILTER
     CLI_COMMAND_DEF("rc_smoothing_info", "show rc_smoothing operational settings", NULL, cliRcSmoothing),
 #endif // USE_RC_SMOOTHING_FILTER

@@ -85,6 +85,8 @@ static batteryState_e voltageState;
 static batteryState_e consumptionState;
 static float wattHoursDrawn;
 
+batteryProfile_t *currentBatteryProfile;
+
 #ifndef DEFAULT_CURRENT_METER_SOURCE
 #ifdef USE_VIRTUAL_CURRENT_METER
 #define DEFAULT_CURRENT_METER_SOURCE CURRENT_METER_VIRTUAL
@@ -105,13 +107,39 @@ static float wattHoursDrawn;
 #define DEFAULT_IBAT_LPF_PERIOD 10
 #endif
 
-PG_REGISTER_WITH_RESET_TEMPLATE(batteryConfig_t, batteryConfig, PG_BATTERY_CONFIG, 3);
+PG_REGISTER_ARRAY_WITH_RESET_FN(batteryProfile_t, BATTERY_PROFILE_COUNT, batteryProfiles, PG_BATTERY_PROFILE, 0);
+
+void pgResetFn_batteryProfiles(batteryProfile_t *instance)
+{
+    // Profile 0: LiPo (4.2V max, 3.5V warning, 3.3V min, 50% hover)
+    RESET_CONFIG(batteryProfile_t, &instance[0],
+        .vbatmaxcellvoltage = 420,  // 4.20V
+        .vbatmincellvoltage = 330,  // 3.30V
+        .vbatwarningcellvoltage = 350,  // 3.50V
+        .thrHover8 = 50,  // 50% hover throttle (typical for LiPo)
+    );
+    
+    // Profile 1: LiHV (4.35V max, 3.5V warning, 3.3V min, 48% hover)
+    RESET_CONFIG(batteryProfile_t, &instance[1],
+        .vbatmaxcellvoltage = 435,  // 4.35V
+        .vbatmincellvoltage = 330,  // 3.30V
+        .vbatwarningcellvoltage = 350,  // 3.50V
+        .thrHover8 = 48,  // 48% hover throttle (slightly lighter than LiPo)
+    );
+    
+    // Profile 2: LiIon (4.1V max, 3.4V warning, 3.0V min, 55% hover)
+    RESET_CONFIG(batteryProfile_t, &instance[2],
+        .vbatmaxcellvoltage = 410,  // 4.10V
+        .vbatmincellvoltage = 300,  // 3.00V
+        .vbatwarningcellvoltage = 340,  // 3.40V
+        .thrHover8 = 55,  // 55% hover throttle (heavier than LiPo)
+    );
+}
+
+PG_REGISTER_WITH_RESET_TEMPLATE(batteryConfig_t, batteryConfig, PG_BATTERY_CONFIG, 4);
 
 PG_RESET_TEMPLATE(batteryConfig_t, batteryConfig,
     // voltage
-    .vbatmaxcellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MAX,
-    .vbatmincellvoltage = VBAT_CELL_VOLTAGE_DEFAULT_MIN,
-    .vbatwarningcellvoltage = 350,
     .vbatnotpresentcellvoltage = 300, //A cell below 3 will be ignored
     .voltageMeterSource = DEFAULT_VOLTAGE_METER_SOURCE,
     .lvcPercentage = 100, //Off by default at 100%
@@ -137,6 +165,41 @@ PG_RESET_TEMPLATE(batteryConfig_t, batteryConfig,
     .vbatDurationForWarning = 0,
     .vbatDurationForCritical = 0,
 );
+
+uint8_t getCurrentBatteryProfileIndex(void)
+{
+    return systemConfig()->batteryProfileIndex;
+}
+
+static void loadBatteryProfile(void)
+{
+    currentBatteryProfile = batteryProfilesMutable(systemConfig()->batteryProfileIndex);
+}
+
+void changeBatteryProfile(uint8_t profileIndex)
+{
+    if (profileIndex < BATTERY_PROFILE_COUNT) {
+        systemConfigMutable()->batteryProfileIndex = profileIndex;
+        loadBatteryProfile();
+        
+        // Recalculate voltage thresholds based on current battery state
+        if (batteryCellCount > 0) {
+            batteryWarningVoltage = batteryCellCount * currentBatteryProfile->vbatwarningcellvoltage;
+            batteryCriticalVoltage = batteryCellCount * currentBatteryProfile->vbatmincellvoltage;
+            batteryWarningHysteresisVoltage = (batteryWarningVoltage > batteryConfig()->vbathysteresis) ? batteryWarningVoltage - batteryConfig()->vbathysteresis : 0;
+            batteryCriticalHysteresisVoltage = (batteryCriticalVoltage > batteryConfig()->vbathysteresis) ? batteryCriticalVoltage - batteryConfig()->vbathysteresis : 0;
+        }
+        
+        beeperConfirmationBeeps(profileIndex + 1);
+    }
+}
+
+void changeBatteryProfileFromCellCount(uint8_t cellCount)
+{
+    // Auto-switch battery profile based on detected cell count
+    // This is a placeholder for future enhancement - users can manually switch profiles for now
+    UNUSED(cellCount);
+}
 
 void batteryUpdateVoltage(timeUs_t currentTimeUs)
 {
@@ -196,7 +259,7 @@ bool isVoltageFromBattery(void)
     // We want to disable battery getting detected around USB voltage or 0V
 
     return (voltageMeter.displayFiltered >= batteryConfig()->vbatnotpresentcellvoltage  // Above ~0V
-        && voltageMeter.displayFiltered <= batteryConfig()->vbatmaxcellvoltage)  // 1s max cell voltage check
+        && voltageMeter.displayFiltered <= currentBatteryProfile->vbatmaxcellvoltage)  // 1s max cell voltage check
         || voltageMeter.displayFiltered > batteryConfig()->vbatnotpresentcellvoltage * 2; // USB voltage - 2s or more check
 }
 
@@ -211,7 +274,7 @@ void batteryUpdatePresence(void)
         if (batteryConfig()->forceBatteryCellCount != 0) {
             batteryCellCount = batteryConfig()->forceBatteryCellCount;
         } else {
-            unsigned cells = (voltageMeter.displayFiltered / batteryConfig()->vbatmaxcellvoltage) + 1;
+            unsigned cells = (voltageMeter.displayFiltered / currentBatteryProfile->vbatmaxcellvoltage) + 1;
             if (cells > MAX_AUTO_DETECT_CELL_COUNT) {
                 // something is wrong, we expect MAX_CELL_COUNT cells maximum (and autodetection will be problematic at 6+ cells)
                 cells = MAX_AUTO_DETECT_CELL_COUNT;
@@ -225,8 +288,8 @@ void batteryUpdatePresence(void)
 #ifdef USE_RPM_LIMIT
         mixerResetRpmLimiter();
 #endif
-        batteryWarningVoltage = batteryCellCount * batteryConfig()->vbatwarningcellvoltage;
-        batteryCriticalVoltage = batteryCellCount * batteryConfig()->vbatmincellvoltage;
+        batteryWarningVoltage = batteryCellCount * currentBatteryProfile->vbatwarningcellvoltage;
+        batteryCriticalVoltage = batteryCellCount * currentBatteryProfile->vbatmincellvoltage;
         batteryWarningHysteresisVoltage = (batteryWarningVoltage > batteryConfig()->vbathysteresis) ? batteryWarningVoltage - batteryConfig()->vbathysteresis : 0;
         batteryCriticalHysteresisVoltage = (batteryCriticalVoltage > batteryConfig()->vbathysteresis) ? batteryCriticalVoltage - batteryConfig()->vbathysteresis : 0;
         lowVoltageCutoff.percentage = 100;
@@ -369,6 +432,11 @@ const char * getBatteryStateString(void)
 void batteryInit(void)
 {
     //
+    // Load battery profile
+    //
+    loadBatteryProfile();
+    
+    //
     // presence
     //
     batteryState = BATTERY_INIT;
@@ -501,7 +569,7 @@ uint8_t calculateBatteryPercentageRemaining(void)
         if (batteryCapacity > 0) {
             batteryPercentage = constrain(((float)batteryCapacity - currentMeter.mAhDrawn) * 100 / batteryCapacity, 0, 100);
         } else {
-            batteryPercentage = constrain((((uint32_t)voltageMeter.displayFiltered - (batteryConfig()->vbatmincellvoltage * batteryCellCount)) * 100) / ((batteryConfig()->vbatmaxcellvoltage - batteryConfig()->vbatmincellvoltage) * batteryCellCount), 0, 100);
+            batteryPercentage = constrain((((uint32_t)voltageMeter.displayFiltered - (currentBatteryProfile->vbatmincellvoltage * batteryCellCount)) * 100) / ((currentBatteryProfile->vbatmaxcellvoltage - currentBatteryProfile->vbatmincellvoltage) * batteryCellCount), 0, 100);
         }
     }
 
