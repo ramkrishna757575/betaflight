@@ -4173,6 +4173,23 @@ static void cliRateProfile(const char *cmdName, char *cmdline)
     }
 }
 
+static void cliBatteryProfile(const char *cmdName, char *cmdline)
+{
+    if (isEmpty(cmdline)) {
+        cliPrintLinef("battery_profile %d", getCurrentBatteryProfileIndex());
+        return;
+    } else {
+        const int i = atoi(cmdline);
+        if (i >= 0 && i < BATTERY_PROFILE_COUNT) {
+            changeBatteryProfile(i);
+            cliBatteryProfile(cmdName, "");
+        } else {
+            cliPrintErrorLinef(cmdName, "BATTERY PROFILE OUTSIDE OF [0..%d]", BATTERY_PROFILE_COUNT - 1);
+        }
+    }
+}
+
+
 static void cliDumpPidProfile(const char *cmdName, uint8_t pidProfileIndex, dumpFlags_t dumpMask)
 {
     if (pidProfileIndex >= PID_PROFILE_COUNT) {
@@ -6644,6 +6661,7 @@ const clicmd_t cmdTable[] = {
 #endif
     CLI_COMMAND_DEF("profile", "change profile", "[<index>]", cliProfile),
     CLI_COMMAND_DEF("rateprofile", "change rate profile", "[<index>]", cliRateProfile),
+    CLI_COMMAND_DEF("battery_profile", "change battery profile", "[<index>]", cliBatteryProfile),
 #ifdef USE_RC_SMOOTHING_FILTER
     CLI_COMMAND_DEF("rc_smoothing_info", "show rc_smoothing operational settings", NULL, cliRcSmoothing),
 #endif // USE_RC_SMOOTHING_FILTER

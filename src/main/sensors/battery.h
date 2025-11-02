@@ -44,11 +44,16 @@ enum {
     AUTO_PROFILE_CELL_COUNT_CHANGE = -1, // Always switch to a profile with matching cell count if there is one
 };
 
-typedef struct batteryConfig_s {
-    // voltage
+typedef struct batteryProfile_s {
     uint16_t vbatmaxcellvoltage;            // maximum voltage per cell, used for auto-detecting battery voltage in 0.01V units, default is 430 (4.30V)
     uint16_t vbatmincellvoltage;            // minimum voltage per cell, this triggers battery critical alarm, in 0.01V units, default is 330 (3.30V)
     uint16_t vbatwarningcellvoltage;        // warning voltage per cell, this triggers battery warning alarm, in 0.01V units, default is 350 (3.50V)
+} batteryProfile_t;
+
+PG_DECLARE_ARRAY(batteryProfile_t, BATTERY_PROFILE_COUNT, batteryProfiles);
+
+typedef struct batteryConfig_s {
+    // voltage
     uint16_t vbatnotpresentcellvoltage;     // Between vbatmaxcellvoltage and 2*this is considered to be USB powered. Below this it is notpresent
     uint8_t lvcPercentage;                  // Percentage of throttle when lvc is triggered
     voltageMeterSource_e voltageMeterSource; // source of battery voltage meter used, either ADC or ESC
@@ -108,6 +113,10 @@ void batteryUpdateStates(timeUs_t currentTimeUs);
 void batteryUpdateAlarms(void);
 
 struct rxConfig_s;
+
+uint8_t getCurrentBatteryProfileIndex(void);
+void changeBatteryProfile(uint8_t profileIndex);
+void changeBatteryProfileFromCellCount(uint8_t cellCount);
 
 uint8_t calculateBatteryPercentageRemaining(void);
 bool isBatteryVoltageConfigured(void);
